@@ -1,10 +1,10 @@
 const bookService = require('../Service/book.service');
 
 const createBook = async (req, res) => {
-    const { title, author, gen, price, published_date, description } = req.body;
-    console.log("Received data:", { title, author, gen, price, published_date, description });
+    const { title, author, publishing_house, gen, price, publication_date, image_url, description } = req.body;
+    console.log("Received data:", { title, author, publishing_house, gen, price, publication_date, image_url, description });
     try {
-        const bookId = await bookService.createBook(title, author, gen, price, published_date, description);
+        const bookId = await bookService.createBook(title, author, publishing_house, gen, price, publication_date, image_url, description);
         res.status(201).json({ bookId });
     } catch (error) {
         console.error("Error in createBook controller:", error.message);
@@ -45,9 +45,30 @@ const deleteBook = async (req, res) => {
     }
 };
 
+const filterBooks = async (req, res) => {
+    try {
+        const filters = req.query;
+        const books = await bookService.filterBooks(filters);
+        res.status(200).json(books);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const getAllFilters = async (req, res) => {
+    try {
+        const filters = await bookService.getAllFilters();
+        res.status(200).json(filters);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 module.exports = {
     createBook,
     getAllBooks,
     getBookByTitle,
-    deleteBook
+    deleteBook,
+    filterBooks,
+    getAllFilters,
 };

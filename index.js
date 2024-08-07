@@ -1,10 +1,10 @@
 const express = require('express');
 const { pool, initialize } = require('./Config/Database/db');
 const bookRoutes = require('./Routes/book.routes');
-const userController = require('./Controller/user.controller');
+const cors = require('cors');
 
 const app = express();
-const port = 3000;
+const port = 3001;
 
 // Inițializăm baza de date
 initialize().catch(err => {
@@ -22,11 +22,16 @@ app.get('/test-db', async (req, res) => {
     }
 });
 
+//Configurare cors
+const corsOptions = {
+    origin: 'http://localhost:3000',
+    optionsSuccessStatus: 200
+}
+app.use(cors(corsOptions));
 
 app.use(express.json());
 app.use('/api', bookRoutes);
 
-app.post('/api/user', userController.createUser);
 
 app.listen(port, () => {
     console.log(`Serverul rulează pe http://localhost:${port}`);

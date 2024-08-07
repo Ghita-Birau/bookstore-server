@@ -26,7 +26,8 @@ async function initialize() {
         publishing_house VARCHAR(255) NOT NULL,
         gen VARCHAR(255) NOT NULL,
         price DECIMAL(10, 2),
-        published_date DATE,
+        publication_date DATE,
+        image_url VARCHAR(255) NOT NULL,
         description TEXT
       );
     `);
