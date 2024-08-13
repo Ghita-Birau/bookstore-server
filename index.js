@@ -1,6 +1,8 @@
 const express = require('express');
-const { pool, initialize } = require('./Config/Database/db');
-const bookRoutes = require('./Routes/book.routes');
+const { pool, initialize } = require('./config/database/db');
+const bookRoutes = require('./routes/book.routes');
+const orderRoutes = require('./routes/order.routes');
+const userRoutes = require('./routes/user.routes')
 const cors = require('cors');
 
 const app = express();
@@ -30,7 +32,10 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 app.use(express.json());
+
 app.use('/api', bookRoutes);
+app.use('/api', orderRoutes);
+app.use('/api', userRoutes);
 
 
 app.listen(port, () => {

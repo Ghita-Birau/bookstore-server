@@ -1,4 +1,4 @@
-const bookService = require('../Service/book.service');
+const bookService = require('../service/book.service');
 
 const createBook = async (req, res) => {
     const { title, author, publishing_house, gen, price, publication_date, image_url, description } = req.body;
@@ -21,10 +21,10 @@ const getAllBooks = async (req, res) => {
     }
 };
 
-const getBookByTitle = async (req, res) => {
-    const { title } = req.query;
+const getBookById = async (req, res) => {
+    const { id } = req.params;
     try {
-        const book = await bookService.getBookByTitle(title);
+        const book = await bookService.getBookById(id);
         if (book) {
             res.status(200).json(book);
         } else {
@@ -48,9 +48,27 @@ const deleteBook = async (req, res) => {
 const filterBooks = async (req, res) => {
     try {
         const filters = req.query;
-        const books = await bookService.filterBooks(filters);
-        res.status(200).json(books);
+        const page = parseInt(filters.page) || 1;
+        const limit = parseInt(filters.limit) || 10;
+        const sortBy = filters.sortBy;
+        const sortOrder = filters.sortOrder;
+
+        delete filters.page;
+        delete filters.limit;
+        delete filters.sortBy;
+        delete filters.sortOrder;
+
+        console.log("Received filterBooks request. Filters:", filters, "Page:", page, "Limit:", limit);
+
+        const result = await bookService.filterBooks(filters, page, limit, sortBy, sortOrder);
+        res.status(200).json({
+            total: result.total,
+            page,
+            limit,
+            books: result.books
+        });
     } catch (error) {
+        console.error("Error in filterBooks controller:", error.message);
         res.status(500).json({ error: error.message });
     }
 };
@@ -58,7 +76,7 @@ const filterBooks = async (req, res) => {
 const getAllFilters = async (req, res) => {
     try {
         const filters = await bookService.getAllFilters();
-        res.status(200).json(filters);
+        res.json({ filters });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -67,8 +85,8 @@ const getAllFilters = async (req, res) => {
 module.exports = {
     createBook,
     getAllBooks,
-    getBookByTitle,
+    getBookById,
     deleteBook,
     filterBooks,
-    getAllFilters,
+    getAllFilters
 };
