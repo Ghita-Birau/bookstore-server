@@ -1,10 +1,10 @@
 const { pool } = require('../config/database/db');
 
-const createBook = async (title, author, publishing_house, gen, price, publication_date, image_url, description) => {
+const createBook = async (title, author, publishing_house, gen, price, publication_date, stock, discount, is_favorite, image_url, short_description, long_description) => {
     const [result] = await pool.execute(`
-        INSERT INTO books (title, author, publishing_house, gen, price, publication_date, image_url, description)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `, [title, author, publishing_house, gen, price, publication_date, image_url, description]);
+        INSERT INTO books (title, author, publishing_house, gen, price, publication_date, stock, discount, is_favorite, image_url, short_description, long_description)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [title, author, publishing_house, gen, price, publication_date, stock, discount, is_favorite, image_url, short_description, long_description]);
     return result.insertId;
 };
 
@@ -152,6 +152,46 @@ const getAllFilters = async () => {
     ];
 };
 
+const updateBook = async (id, fields) => {
+    const columns = Object.keys(fields);
+    const values = Object.values(fields);
+
+    if (columns.includes('stock')) {
+        const [currentStockRow] = await pool.execute(`
+            SELECT stock FROM books WHERE id = ?
+        `, [id]);
+
+        if (currentStockRow.length === 0) {
+            throw new Error('Book not found');
+        }
+
+        const currentStock = currentStockRow[0].stock;
+        const quantityToSubtract = fields.stock;
+
+        if (currentStock < quantityToSubtract) {
+            throw new Error('Not enough stock available');
+        }
+
+        const newStock = currentStock - quantityToSubtract;
+
+        const stockIndex = columns.indexOf('stock');
+        values[stockIndex] = newStock;
+    }
+
+    const setClause = columns.map(column => `${column} = ?`).join(', ');
+
+    values.push(id);
+
+    const [result] = await pool.execute(`
+        UPDATE books
+        SET ${setClause}
+        WHERE id = ?
+    `, values);
+
+    return result.affectedRows > 0;
+};
+
+
 module.exports = {
     createBook,
     getAllBooks,
@@ -159,4 +199,5 @@ module.exports = {
     deleteBookById,
     filterBooks,
     getAllFilters,
+    updateBook
 };

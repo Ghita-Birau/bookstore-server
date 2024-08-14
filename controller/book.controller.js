@@ -1,10 +1,10 @@
 const bookService = require('../service/book.service');
 
 const createBook = async (req, res) => {
-    const { title, author, publishing_house, gen, price, publication_date, image_url, description } = req.body;
-    console.log("Received data:", { title, author, publishing_house, gen, price, publication_date, image_url, description });
+    const { title, author, publishing_house, gen, price, publication_date, stock, discount, is_favorite, image_url, short_description, long_description } = req.body;
+    console.log("Received data:", { title, author, publishing_house, gen, price, publication_date, stock, discount, is_favorite, image_url, short_description, long_description });
     try {
-        const bookId = await bookService.createBook(title, author, publishing_house, gen, price, publication_date, image_url, description);
+        const bookId = await bookService.createBook(title, author, publishing_house, gen, price, publication_date, stock, discount, is_favorite, image_url, short_description, long_description);
         res.status(201).json({ bookId });
     } catch (error) {
         console.error("Error in createBook controller:", error.message);
@@ -82,11 +82,34 @@ const getAllFilters = async (req, res) => {
     }
 };
 
+const updateBook = async (req, res) => {
+    const { id } = req.params;
+    const fieldsToUpdate = req.body;
+
+    try {
+        if (Object.keys(fieldsToUpdate).length === 0) {
+            return res.status(400).json({ message: 'No fields provided for update' });
+        }
+
+        const updated = await bookService.updateBook(id, fieldsToUpdate);
+
+        if (updated) {
+            res.status(200).json({ message: 'Book updated successfully' });
+        } else {
+            res.status(404).json({ message: 'Book not found' });
+        }
+    } catch (error) {
+        console.error("Error in updateBook controller:", error.message);
+        res.status(500).json({ error: error.message });
+    }
+};
+
 module.exports = {
     createBook,
     getAllBooks,
     getBookById,
     deleteBook,
     filterBooks,
-    getAllFilters
+    getAllFilters,
+    updateBook
 };

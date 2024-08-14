@@ -5,13 +5,13 @@ const { pool } = require('../config/database/db');
 const BATCH_SIZE = 1000;
 const insertBooksBatch = async (books) => {
     const values = [];
-    const placeholders = books.map(() => '(?, ?, ?, ?, ?, ?, ?, ?)').join(', ');
-    books.forEach(({ title, author, publishing_house, gen, price, publication_date, image_url, description }) => {
-        values.push(title, author, publishing_house, gen, price, publication_date, image_url, description);
+    const placeholders = books.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ');
+    books.forEach(({ title, author, publishing_house, gen, price, publication_date, stock, discount, is_favorite, image_url, short_description, long_description }) => {
+        values.push(title, author, publishing_house, gen, price, publication_date, stock, discount, is_favorite, image_url, short_description, long_description);
     });
 
     const [result] = await pool.execute(`
-        INSERT INTO books (title, author, publishing_house, gen, price, publication_date, image_url, description)
+        INSERT INTO books (title, author, publishing_house, gen, price, publication_date, stock, discount, is_favorite, image_url, short_description, long_description)
         VALUES ${placeholders}
     `, values);
 

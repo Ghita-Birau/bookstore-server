@@ -23,7 +23,7 @@ const createOrder = async (orderData) => {
         try {
 
             await connection.beginTransaction();
-            const total_price = calculateTotalPrice(orderData.items, connection);
+            const total_price = await calculateTotalPrice(orderData.items, connection);
             const [result] = await connection.execute(
                 `INSERT INTO orders (user_id, total_price) VALUES (?, ?)`,
                 [orderData.user_id, total_price]
@@ -44,7 +44,7 @@ const createOrder = async (orderData) => {
 
                 await connection.execute(
                     `INSERT INTO order_items (order_id, book_id, quantity, price) VALUES (?, ?, ?, ?)`,
-                    [orderId, item.book_id, item.quantity, bookPrice]
+                    [orderId, item.book_id, item.quantity, item.quantity * bookPrice]
                 );
             }
 
@@ -79,9 +79,21 @@ const updateOrder = async (orderId, orderData) => {
         }
 
         for (const item of orderData.items) {
+            const [rows] = await connection.execute(
+                `SELECT price FROM books WHERE id = ?`,
+                [item.book_id]
+            );
+
+            if (rows.length === 0) {
+                throw new Error(`Book with id ${item.book_id} not found`);
+            }
+
+            const pricePerUnit = rows[0].price;
+            const totalItemPrice = pricePerUnit * item.quantity;
+
             await connection.execute(
-                `UPDATE order_items SET quantity = ? WHERE order_id = ? AND book_id = ?`,
-                [item.quantity, orderId, item.book_id]
+                `UPDATE order_items SET quantity = ?, price = ? WHERE order_id = ? AND book_id = ?`,
+                [item.quantity, totalItemPrice, orderId, item.book_id]
             );
         }
 

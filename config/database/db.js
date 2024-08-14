@@ -27,8 +27,12 @@ async function initialize() {
         gen VARCHAR(255) NOT NULL,
         price DECIMAL(10, 2),
         publication_date DATE,
+        stock INT NOT NULL DEFAULT 0,
+        discount DECIMAL(5, 2) DEFAULT 0.00,
+        is_favorite BOOLEAN NOT NULL DEFAULT FALSE,
         image_url VARCHAR(255) NOT NULL,
-        description TEXT
+        short_description TEXT,
+        long_description TEXT
       );
     `);
 
