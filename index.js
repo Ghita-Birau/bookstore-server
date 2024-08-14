@@ -1,9 +1,11 @@
+require('dotenv').config();
 const express = require('express');
 const { pool, initialize } = require('./config/database/db');
 const bookRoutes = require('./routes/book.routes');
 const orderRoutes = require('./routes/order.routes');
 const userRoutes = require('./routes/user.routes')
-const cors = require('cors');
+const cors = require('cors')
+const authenticateToken = require('./security/jwt.validator')
 
 const app = express();
 const port = 3001;
@@ -32,6 +34,14 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 app.use(express.json());
+
+
+
+// Rută protejată de exemplu
+// app.get('/api/protected', authenticateToken, (req, res) => {
+//     res.status(200).json({ message: `Welcome ${req.user.username}, you are authenticated!` });
+// });
+
 
 app.use('/api', bookRoutes);
 app.use('/api', orderRoutes);

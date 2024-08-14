@@ -10,6 +10,30 @@ const createUser = async (req, res) => {
         }
     };
 
+const registerUser = async (req, res) => {
+    try {
+        const user = await userService.registerUser(req.body);
+        res.status(201).json(user);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const loginUser = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const result = await userService.authenticateUser(email, password);
+
+        if (!result) {
+            return res.status(401).json({ message: 'Invalid email or password' });
+        }
+
+        res.status(200).json(result);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 const getUserById = async (req, res) => {
         try {
             const user = await userService.getUserById(req.params.id);
@@ -56,6 +80,8 @@ const getAllUsers = async (req, res) => {
     };
 
 module.exports = {
+    registerUser,
+    loginUser,
     createUser,
     getUserById,
     getAllUsers,
