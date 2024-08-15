@@ -63,6 +63,48 @@ const getOrderById = async (id) => {
         return rows[0];
     };
 
+const getOrderByUserId = async (userId) => {
+    const [rows] = await pool.query(`
+        SELECT 
+            o.id AS order_id,
+            o.total_price,
+            o.order_date,
+            oi.id AS item_id,
+            oi.book_id,
+            oi.quantity,
+            oi.price AS item_price
+        FROM orders o
+        LEFT JOIN order_items oi ON o.id = oi.order_id
+        WHERE o.user_id = ?
+        ORDER BY o.order_date DESC
+    `, [userId]);
+
+    const ordersMap = new Map();
+
+    rows.forEach(row => {
+        const orderId = row.order_id;
+
+        if (!ordersMap.has(orderId)) {
+            ordersMap.set(orderId, {
+                id: orderId,
+                total_price: row.total_price,
+                order_date: row.order_date,
+                items: []
+            });
+        }
+
+        ordersMap.get(orderId).items.push({
+            item_id: row.item_id,
+            book_id: row.book_id,
+            quantity: row.quantity,
+            price: row.item_price
+        });
+    });
+
+    return Array.from(ordersMap.values());
+};
+
+
 const updateOrder = async (orderId, orderData) => {
     const connection = await pool.getConnection();
     try {
@@ -128,6 +170,7 @@ const getAllOrders = async () => {
 module.exports = {
     createOrder,
     getOrderById,
+    getOrderByUserId,
     getAllOrders,
     updateOrder,
     deleteOrder
