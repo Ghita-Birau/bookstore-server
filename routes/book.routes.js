@@ -9,7 +9,7 @@ router.get('/book/:id', bookController.getBookById);
 router.delete('/book-by-id', bookController.deleteBook);
 router.get('/filters', bookController.getAllFilters);
 router.get('/filter-books', bookController.filterBooks);
-router.put('/book/:id', bookController.updateBook);
+//router.put('/book/:id', bookController.updateBook);
 
 
 module.exports = router;

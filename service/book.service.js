@@ -152,43 +152,46 @@ const getAllFilters = async () => {
     ];
 };
 
-const updateBook = async (id, fields) => {
+const updateBook = async (id, fields, connection = null) => {
     const columns = Object.keys(fields);
     const values = Object.values(fields);
+    const conn = connection || await pool.getConnection();
+    try {
+        if (columns.includes('stock')) {
+            const [currentStockRow] = await conn.execute(`
+                SELECT stock FROM books WHERE id = ?
+            `, [id]);
 
-    if (columns.includes('stock')) {
-        const [currentStockRow] = await pool.execute(`
-            SELECT stock FROM books WHERE id = ?
-        `, [id]);
+            if (currentStockRow.length === 0) {
+                throw new Error('Book not found');
+            }
 
-        if (currentStockRow.length === 0) {
-            throw new Error('Book not found');
+            const currentStock = currentStockRow[0].stock;
+            const quantityToSubtract = fields.stock;
+
+            if (currentStock < quantityToSubtract) {
+                throw new Error('Not enough stock available');
+            }
+
+            const newStock = currentStock - quantityToSubtract;
+
+            const stockIndex = columns.indexOf('stock');
+            values[stockIndex] = newStock;
         }
 
-        const currentStock = currentStockRow[0].stock;
-        const quantityToSubtract = fields.stock;
+        const setClause = columns.map(column => `${column} = ?`).join(', ');
+        values.push(id);
 
-        if (currentStock < quantityToSubtract) {
-            throw new Error('Not enough stock available');
-        }
+        const [result] = await conn.execute(`
+            UPDATE books
+            SET ${setClause}
+            WHERE id = ?
+        `, values);
 
-        const newStock = currentStock - quantityToSubtract;
-
-        const stockIndex = columns.indexOf('stock');
-        values[stockIndex] = newStock;
+        return result.affectedRows > 0;
+    } finally {
+    if (!connection) conn.release();
     }
-
-    const setClause = columns.map(column => `${column} = ?`).join(', ');
-
-    values.push(id);
-
-    const [result] = await pool.execute(`
-        UPDATE books
-        SET ${setClause}
-        WHERE id = ?
-    `, values);
-
-    return result.affectedRows > 0;
 };
 
 
@@ -199,5 +202,5 @@ module.exports = {
     deleteBookById,
     filterBooks,
     getAllFilters,
-    updateBook
+    updateBook,
 };

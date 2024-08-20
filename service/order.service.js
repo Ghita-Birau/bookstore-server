@@ -1,4 +1,5 @@
 const pool = require('../config/database/db').pool;
+const { updateBook } = require('./book.service');
 
 const calculateTotalPrice = async (items, connection) => {
     let totalPrice = 0;
@@ -21,7 +22,6 @@ const calculateTotalPrice = async (items, connection) => {
 const createOrder = async (orderData) => {
         const connection = await pool.getConnection();
         try {
-
             await connection.beginTransaction();
             const total_price = await calculateTotalPrice(orderData.items, connection);
             const [result] = await connection.execute(
@@ -46,6 +46,7 @@ const createOrder = async (orderData) => {
                     `INSERT INTO order_items (order_id, book_id, quantity, price) VALUES (?, ?, ?, ?)`,
                     [orderId, item.book_id, item.quantity, item.quantity * bookPrice]
                 );
+                await updateBook(item.book_id, { stock: item.quantity }, connection);
             }
 
             await connection.commit();
