@@ -2,7 +2,11 @@ const orderService = require('../service/order.service');
 
 const createOrder = async (req, res) => {
         try {
-            const order = await orderService.createOrder(req.body);
+            const orderData = {
+                user_id: req.user.id,
+                items: req.body.items
+            };
+            const order = await orderService.createOrder(orderData);
             res.status(201).json(order);
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -11,7 +15,8 @@ const createOrder = async (req, res) => {
 
 const getOrder = async (req, res) => {
     try {
-        const { id, userId } = req.query;
+        const { id } = req.query;
+        const userId = req.user.id;
 
         if (!id && !userId) {
             return res.status(400).json({ message: 'Either id or userId must be provided' });
