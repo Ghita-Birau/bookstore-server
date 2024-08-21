@@ -32,7 +32,6 @@ const authenticateUser = async (email, password) => {
         { id: user.id, username: user.username, role: user.role },
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRES_IN },
-        console.log(process.env.JWT_EXPIRES_IN),
     );
 
     return { token, user: { id: user.id, username: user.username, role: user.role, email: user.email } };

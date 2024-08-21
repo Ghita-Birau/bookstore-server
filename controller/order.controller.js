@@ -9,30 +9,25 @@ const createOrder = async (req, res) => {
         }
     };
 
-const getOrderById = async (req, res) => {
-        try {
-            const order = await orderService.getOrderById(req.params.id);
-            if (!order) {
-                return res.status(404).json({ message: 'Order not found' });
-            }
-            res.status(200).json(order);
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-    };
-
-const getOrderByUserId = async (req, res) => {
+const getOrder = async (req, res) => {
     try {
-        const order = await orderService.getOrderByUserId(req.params.userId);
-        if (!order) {
+        const { id, userId } = req.query;
+
+        if (!id && !userId) {
+            return res.status(400).json({ message: 'Either id or userId must be provided' });
+        }
+
+        const order = await orderService.getOrder(id, userId);
+
+        if (!order || (Array.isArray(order) && order.length === 0)) {
             return res.status(404).json({ message: 'Order not found' });
         }
+
         res.status(200).json(order);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
-
 const updateOrder = async (req, res) => {
     try {
         const updatedOrder = await orderService.updateOrder(req.params.id, req.body);
@@ -68,8 +63,7 @@ const getAllOrders = async (req, res) => {
 
 module.exports = {
     createOrder,
-    getOrderById,
-    getOrderByUserId,
+    getOrder,
     getAllOrders,
     updateOrder,
     deleteOrder,

@@ -27,37 +27,45 @@ const filterBooks = async (filters, page, limit, sortBy, sortOrder) => {
     let query = 'SELECT * FROM books WHERE 1=1 AND title IS NOT NULL AND title != \'\' AND price IS NOT NULL AND price != \'\'';
     const params = [];
 
+    const filterMappings = {
+        gen: {
+            query: (value) => ` AND gen IN (${value.map(() => '?').join(',')})`,
+            process: (value) => (Array.isArray(value) ? value : [value])
+        },
+        author: {
+            query: (value) => ` AND author IN (${value.map(() => '?').join(',')})`,
+            process: (value) => (Array.isArray(value) ? value : [value])
+        },
+        publishing_house: {
+            query: (value) => ` AND publishing_house IN (${value.map(() => '?').join(',')})`,
+            process: (value) => (Array.isArray(value) ? value : [value])
+        },
+        minPrice: {
+            query: () => ' AND price >= ?',
+            process: (value) => [value]
+        },
+        maxPrice: {
+            query: () => ' AND price <= ?',
+            process: (value) => [value]
+        },
+        startDate: {
+            query: () => ' AND publication_date >= ?',
+            process: (value) => [value]
+        },
+        endDate: {
+            query: () => ' AND publication_date <= ?',
+            process: (value) => [value]
+        }
+    };
+
     try {
-        if (filters.gen) {
-            const genres = Array.isArray(filters.gen) ? filters.gen : [filters.gen];
-            query += ` AND gen IN (${genres.map(() => '?').join(',')})`;
-            params.push(...genres);
-        }
-        if (filters.author) {
-            const authors = Array.isArray(filters.author) ? filters.author : [filters.author];
-            query += ` AND author IN (${authors.map(() => '?').join(',')})`;
-            params.push(...authors);
-        }
-        if (filters.publishing_house) {
-            const publishingHouses = Array.isArray(filters.publishing_house) ? filters.publishing_house : [filters.publishing_house];
-            query += ` AND publishing_house IN (${publishingHouses.map(() => '?').join(',')})`;
-            params.push(...publishingHouses);
-        }
-        if (filters.minPrice) {
-            query += ' AND price >= ?';
-            params.push(filters.minPrice);
-        }
-        if (filters.maxPrice) {
-            query += ' AND price <= ?';
-            params.push(filters.maxPrice);
-        }
-        if (filters.startDate) {
-            query += ' AND publication_date >= ?';
-            params.push(filters.startDate);
-        }
-        if (filters.endDate) {
-            query += ' AND publication_date <= ?';
-            params.push(filters.endDate);
+        // Iterează prin filtre și aplică logica specifică fiecăruia
+        for (const key in filters) {
+            if (filterMappings[key] && filters[key] && filters[key].length > 0) {
+                const processedValue = filterMappings[key].process(filters[key]);
+                query += filterMappings[key].query(processedValue);
+                params.push(...processedValue);
+            }
         }
 
         if (sortBy) {
@@ -66,24 +74,13 @@ const filterBooks = async (filters, page, limit, sortBy, sortOrder) => {
         }
 
         const offset = (page - 1) * limit;
-
         const finalQuery = `${query} LIMIT ${parseInt(limit, 10)} OFFSET ${parseInt(offset, 10)}`;
 
-        console.log("Executing query:", finalQuery);
-        console.log("With parameters:", params);
-        console.log("Parameter types:", params.map(param => typeof param));
-
         const [rows] = await pool.execute(finalQuery, params);
-        console.log("Query executed successfully. Rows:", rows);
 
         let countQuery = query.replace(' LIMIT ? OFFSET ?', '');
-        console.log("Executing count query:", countQuery);
-        console.log("With parameters for count query:", params);
-
         const [totalRows] = await pool.execute(countQuery, params);
         const total = totalRows.length;
-
-        console.log("Count query executed successfully. Total rows:", total);
 
         return { total, books: rows };
     } catch (error) {
@@ -92,65 +89,33 @@ const filterBooks = async (filters, page, limit, sortBy, sortOrder) => {
     }
 };
 
+
 const getAllFilters = async () => {
-    const [genres] = await pool.execute(`
-        SELECT DISTINCT gen
+    const [results] = await pool.execute(`
+        SELECT 
+            (SELECT GROUP_CONCAT(DISTINCT gen SEPARATOR ',') FROM books WHERE gen IS NOT NULL AND gen != '') AS genres,
+            (SELECT GROUP_CONCAT(DISTINCT author SEPARATOR ',') FROM books WHERE author IS NOT NULL AND author != '') AS authors,
+            (SELECT GROUP_CONCAT(DISTINCT publishing_house SEPARATOR ',') FROM books WHERE publishing_house IS NOT NULL AND publishing_house != '') AS publishingHouses,
+            MIN(price) AS minPrice,
+            MAX(price) AS maxPrice,
+            MIN(publication_date) AS startDate,
+            MAX(publication_date) AS endDate
         FROM books
-        WHERE gen IS NOT NULL AND gen != ''
     `);
-    const [authors] = await pool.execute(`
-        SELECT DISTINCT author
-        FROM books
-        WHERE author IS NOT NULL AND author != ''
-    `);
-    const [publishingHouses] = await pool.execute(`
-        SELECT DISTINCT publishing_house
-        FROM books
-        WHERE publishing_house IS NOT NULL AND publishing_house != ''
-    `);
-    const [minPrice] = await pool.execute('SELECT MIN(price) AS minPrice FROM books');
-    const [maxPrice] = await pool.execute('SELECT MAX(price) AS maxPrice FROM books');
 
-    const [startDate] = await pool.execute('SELECT MIN(publication_date) AS startDate FROM books');
-    const [endDate] = await pool.execute('SELECT MAX(publication_date) AS endDate FROM books');
+    const formattedStartDate = new Date(results[0].startDate).toISOString().split('T')[0];
+    const formattedEndDate = new Date(results[0].endDate).toISOString().split('T')[0];
 
-    const formattedStartDate = new Date(startDate[0].startDate).toISOString().split('T')[0];
-    const formattedEndDate = new Date(endDate[0].endDate).toISOString().split('T')[0];
-
-    return [
-        {
-            key: 'gen',
-            label: 'Category',
-            value: genres.map(row => row.gen)
-        },
-        {
-            key: 'author',
-            label: 'Author',
-            value: authors.map(row => row.author)
-        },
-        {
-            key: 'publishing_house',
-            label: 'Publishing house',
-            value: publishingHouses.map(row => row.publishing_house)
-        },
-        {
-            key: 'price',
-            label: 'Price',
-            value: {
-                minPrice: minPrice[0].minPrice,
-                maxPrice: maxPrice[0].maxPrice
-            }
-        },
-        {
-            key: 'date',
-            label: 'Date',
-            value: {
-                startDate: formattedStartDate,
-                endDate: formattedEndDate
-            }
-        },
+    const mapping = [
+        { key: 'gen', label: 'Category', value: results[0].genres ? results[0].genres.split(',') : [] },
+        { key: 'author', label: 'Author', value: results[0].authors ? results[0].authors.split(',') : [] },
+        { key: 'publishing_house', label: 'Publishing house', value: results[0].publishingHouses ? results[0].publishingHouses.split(',') : [] },
+        { key: 'price', label: 'Price', value: { minPrice: results[0].minPrice, maxPrice: results[0].maxPrice } },
+        { key: 'date', label: 'Date', value: { startDate: formattedStartDate, endDate: formattedEndDate } }
     ];
+    return mapping;
 };
+
 
 const updateBook = async (id, fields, connection = null) => {
     const columns = Object.keys(fields);

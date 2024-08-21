@@ -58,7 +58,7 @@ const filterBooks = async (req, res) => {
         delete filters.sortBy;
         delete filters.sortOrder;
 
-        console.log("Received filterBooks request. Filters:", filters, "Page:", page, "Limit:", limit);
+        // console.log("Received filterBooks request. Filters:", filters, "Page:", page, "Limit:", limit);
 
         const result = await bookService.filterBooks(filters, page, limit, sortBy, sortOrder);
         res.status(200).json({

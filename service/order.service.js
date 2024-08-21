@@ -59,13 +59,8 @@ const createOrder = async (orderData) => {
         }
     };
 
-const getOrderById = async (id) => {
-        const [rows] = await pool.query(`SELECT * FROM orders WHERE id = ?`, [id]);
-        return rows[0];
-    };
-
-const getOrderByUserId = async (userId) => {
-    const [rows] = await pool.query(`
+const getOrder = async (id = null, userId = null) => {
+    let query = `
         SELECT 
             o.id AS order_id,
             o.total_price,
@@ -76,35 +71,74 @@ const getOrderByUserId = async (userId) => {
             oi.price AS item_price
         FROM orders o
         LEFT JOIN order_items oi ON o.id = oi.order_id
-        WHERE o.user_id = ?
-        ORDER BY o.order_date DESC
-    `, [userId]);
+    `;
 
-    const ordersMap = new Map();
+    const params = [];
+    let conditionAdded = false;
 
-    rows.forEach(row => {
-        const orderId = row.order_id;
+    if (userId) {
+        query += ' WHERE o.user_id = ?';
+        params.push(userId);
+        conditionAdded = true;
+    }
 
-        if (!ordersMap.has(orderId)) {
-            ordersMap.set(orderId, {
-                id: orderId,
-                total_price: row.total_price,
-                order_date: row.order_date,
-                items: []
+    if (id) {
+        query += conditionAdded ? ' AND o.id = ?' : ' WHERE o.id = ?';
+        params.push(id);
+    }
+
+    query += ' ORDER BY o.order_date DESC';
+
+    const [rows] = await pool.query(query, params);
+
+    if (rows.length === 0) {
+        return null;
+    }
+
+    if (id) {
+        const order = {
+            id: rows[0].order_id,
+            total_price: rows[0].total_price,
+            order_date: rows[0].order_date,
+            items: []
+        };
+
+        rows.forEach(row => {
+            order.items.push({
+                item_id: row.item_id,
+                book_id: row.book_id,
+                quantity: row.quantity,
+                price: row.item_price
             });
-        }
-
-        ordersMap.get(orderId).items.push({
-            item_id: row.item_id,
-            book_id: row.book_id,
-            quantity: row.quantity,
-            price: row.item_price
         });
-    });
 
-    return Array.from(ordersMap.values());
+        return order;
+    } else if (userId) {
+        const ordersMap = new Map();
+
+        rows.forEach(row => {
+            const orderId = row.order_id;
+
+            if (!ordersMap.has(orderId)) {
+                ordersMap.set(orderId, {
+                    id: orderId,
+                    total_price: row.total_price,
+                    order_date: row.order_date,
+                    items: []
+                });
+            }
+
+            ordersMap.get(orderId).items.push({
+                item_id: row.item_id,
+                book_id: row.book_id,
+                quantity: row.quantity,
+                price: row.item_price
+            });
+        });
+
+        return Array.from(ordersMap.values());
+    }
 };
-
 
 const updateOrder = async (orderId, orderData) => {
     const connection = await pool.getConnection();
@@ -170,8 +204,7 @@ const getAllOrders = async () => {
 
 module.exports = {
     createOrder,
-    getOrderById,
-    getOrderByUserId,
+    getOrder,
     getAllOrders,
     updateOrder,
     deleteOrder
