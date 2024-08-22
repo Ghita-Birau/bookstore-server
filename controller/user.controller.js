@@ -34,7 +34,7 @@ const loginUser = async (req, res) => {
     }
 };
 
-const getUserById = async (req, res) => {
+const getUserDetails = async (req, res) => {
         try {
             const user = await userService.getUserById(req.user.id);
             if (!user) {
@@ -83,7 +83,7 @@ module.exports = {
     registerUser,
     loginUser,
     createUser,
-    getUserById,
+    getUserDetails,
     getAllUsers,
     updateUser,
     deleteUser

@@ -36,13 +36,6 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 
-
-// Rută protejată de exemplu
-// app.get('/api/protected', authenticateToken, (req, res) => {
-//     res.status(200).json({ message: `Welcome ${req.user.username}, you are authenticated!` });
-// });
-
-
 app.use('/api', bookRoutes);
 app.use('/api', orderRoutes);
 app.use('/api', userRoutes);

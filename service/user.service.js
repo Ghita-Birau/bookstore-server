@@ -29,14 +29,13 @@ const authenticateUser = async (email, password) => {
     if (!isMatch) return null;
 
     const token = jwt.sign(
-        { id: user.id, username: user.username, role: user.role },
+        { id: user.id, firstname: user.firstname, lastname: user.lastname, username: user.username, email: user.email, password: user.password, role: user.role },
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRES_IN },
     );
 
-    return { token, user: { id: user.id, username: user.username, role: user.role, email: user.email } };
+    return { token, user: { id: user.id, firstname: user.firstname, lastname: user.lastname, username: user.username, email: user.email, password: user.password, role: user.role } };
 };
-
 
 const getUserById = async (id) => {
         const [rows] = await pool.query(`SELECT * FROM users WHERE id = ?`, [id]);
@@ -44,10 +43,12 @@ const getUserById = async (id) => {
     };
 
 const updateUser = async (id, userData) => {
-        const [result] = await pool.execute(
-            `UPDATE users SET firstname = ?, lastname = ?, username = ?, role = ?, email = ?, password = ? WHERE id = ?`,
-            [userData.firstname, userData.lastname, userData.username, userData.role, userData.email, userData.password, id]
+    const hashedPassword = await bcrypt.hash(userData.password, 10);
+    const [result] = await pool.execute(
+            `UPDATE users SET firstname = ?, lastname = ?, username = ?, email = ?, password = ? WHERE id = ?`,
+            [userData.firstname, userData.lastname, userData.username, userData.email, hashedPassword, id]
         );
+
         return result.affectedRows > 0 ? { id, ...userData } : null;
     };
 
