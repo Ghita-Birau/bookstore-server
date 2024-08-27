@@ -131,14 +131,12 @@ const updateBook = async (id, fields, connection = null) => {
                 throw new Error('Book not found');
             }
 
-            const currentStock = currentStockRow[0].stock;
-            const quantityToSubtract = fields.stock;
+            currentStock = currentStockRow[0].stock;
+            const newStock = fields.stock;
 
-            if (currentStock < quantityToSubtract) {
-                throw new Error('Not enough stock available');
+            if (newStock < 0) {
+                throw new Error('Stock cannot be negative');
             }
-
-            const newStock = currentStock - quantityToSubtract;
 
             const stockIndex = columns.indexOf('stock');
             values[stockIndex] = newStock;

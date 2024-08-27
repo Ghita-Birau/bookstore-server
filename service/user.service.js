@@ -29,12 +29,12 @@ const authenticateUser = async (email, password) => {
     if (!isMatch) return null;
 
     const token = jwt.sign(
-        { id: user.id, firstname: user.firstname, lastname: user.lastname, username: user.username, email: user.email, password: user.password, role: user.role },
+        { id: user.id, role: user.role },
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRES_IN },
     );
 
-    return { token, user: { id: user.id, firstname: user.firstname, lastname: user.lastname, username: user.username, email: user.email, password: user.password, role: user.role } };
+    return { token, user: { id: user.id, role: user.role } };
 };
 
 const getUserById = async (id) => {

@@ -29,10 +29,11 @@ const createOrder = async (orderData) => {
                 [orderData.user_id, total_price]
             );
             const orderId = result.insertId;
+            const updatedItems = [];
 
             for (const item of orderData.items) {
                 const [rows] = await connection.execute(
-                    `SELECT price FROM books WHERE id = ?`,
+                    `SELECT price, stock FROM books WHERE id = ?`,
                     [item.book_id]
                 );
 
@@ -41,16 +42,37 @@ const createOrder = async (orderData) => {
                 }
 
                 const bookPrice = rows[0].price;
+                const currentStock = rows[0].stock;
+
+                if (currentStock < item.quantity) {
+                    throw new Error(`Not enough stock for book with id ${item.book_id}`);
+                }
+
+                const newStock = currentStock - item.quantity;
 
                 await connection.execute(
                     `INSERT INTO order_items (order_id, book_id, quantity, price) VALUES (?, ?, ?, ?)`,
                     [orderId, item.book_id, item.quantity, item.quantity * bookPrice]
                 );
-                await updateBook(item.book_id, { stock: item.quantity }, connection);
+
+                await connection.execute(
+                    `UPDATE books SET stock = ? WHERE id = ?`,
+                    [newStock, item.book_id]
+                );
+
+                updatedItems.push({
+                    book_id: item.book_id,
+                    quantity: item.quantity,
+                    updated_stock: newStock
+                });
             }
 
             await connection.commit();
-            return { id: orderId, user_id: orderData.user_id, total_price, items: orderData.items };
+            return {
+                id: orderId,
+                user_id: orderData.user_id, total_price,
+                items: updatedItems
+            };
         } catch (error) {
             await connection.rollback();
             throw error;

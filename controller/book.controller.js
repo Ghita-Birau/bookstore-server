@@ -26,6 +26,7 @@ const getBookById = async (req, res) => {
     try {
         const book = await bookService.getBookById(id);
         if (book) {
+            console.log(book);
             res.status(200).json(book);
         } else {
             res.status(404).json({ message: 'Book not found' });
@@ -82,27 +83,27 @@ const getAllFilters = async (req, res) => {
     }
 };
 
-// const updateBook = async (req, res) => {
-//     const { id } = req.params;
-//     const fieldsToUpdate = req.body;
-//
-//     try {
-//         if (Object.keys(fieldsToUpdate).length === 0) {
-//             return res.status(400).json({ message: 'No fields provided for update' });
-//         }
-//
-//         const updated = await bookService.updateBook(id, fieldsToUpdate);
-//
-//         if (updated) {
-//             res.status(200).json({ message: 'Book updated successfully' });
-//         } else {
-//             res.status(404).json({ message: 'Book not found' });
-//         }
-//     } catch (error) {
-//         console.error("Error in updateBook controller:", error.message);
-//         res.status(500).json({ error: error.message });
-//     }
-// };
+const updateBook = async (req, res) => {
+    const { id } = req.params;
+    const fieldsToUpdate = req.body;
+
+    try {
+        if (Object.keys(fieldsToUpdate).length === 0) {
+            return res.status(400).json({ message: 'No fields provided for update' });
+        }
+
+        const updated = await bookService.updateBook(id, fieldsToUpdate);
+
+        if (updated) {
+            res.status(200).json({ message: 'Book updated successfully' });
+        } else {
+            res.status(404).json({ message: 'Book not found' });
+        }
+    } catch (error) {
+        console.error("Error in updateBook controller:", error.message);
+        res.status(500).json({ error: error.message });
+    }
+};
 
 module.exports = {
     createBook,
@@ -111,5 +112,5 @@ module.exports = {
     deleteBook,
     filterBooks,
     getAllFilters,
-    //updateBook
+    updateBook
 };
