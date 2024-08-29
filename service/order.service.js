@@ -1,6 +1,4 @@
 const pool = require('../config/database/db').pool;
-const { updateBook } = require('./book.service');
-
 const calculateTotalPrice = async (items, connection) => {
     let totalPrice = 0;
 
@@ -81,10 +79,11 @@ const createOrder = async (orderData) => {
         }
     };
 
-const getOrder = async (id = null, userId = null) => {
+const getOrders = async ( userId = null, isAdmin = false) => {
     let query = `
         SELECT 
             o.id AS order_id,
+            o.user_id,
             o.total_price,
             o.order_date,
             oi.id AS item_id,
@@ -96,17 +95,10 @@ const getOrder = async (id = null, userId = null) => {
     `;
 
     const params = [];
-    let conditionAdded = false;
 
-    if (userId) {
-        query += ' WHERE o.user_id = ?';
+    if(!isAdmin) {
+        query += 'WHERE o.user_id = ?';
         params.push(userId);
-        conditionAdded = true;
-    }
-
-    if (id) {
-        query += conditionAdded ? ' AND o.id = ?' : ' WHERE o.id = ?';
-        params.push(id);
     }
 
     query += ' ORDER BY o.order_date DESC';
@@ -117,49 +109,29 @@ const getOrder = async (id = null, userId = null) => {
         return null;
     }
 
-    if (id) {
-        const order = {
-            id: rows[0].order_id,
-            total_price: rows[0].total_price,
-            order_date: rows[0].order_date,
-            items: []
-        };
+    const ordersMap = new Map();
+    rows.forEach(row => {
+        const orderId = row.order_id;
 
-        rows.forEach(row => {
-            order.items.push({
-                item_id: row.item_id,
-                book_id: row.book_id,
-                quantity: row.quantity,
-                price: row.item_price
+        if (!ordersMap.has(orderId)) {
+            ordersMap.set(orderId, {
+                id: orderId,
+                user_id: row.user_id,
+                total_price: row.total_price,
+                order_date: row.order_date,
+                items: []
             });
+        }
+
+        ordersMap.get(orderId).items.push({
+            item_id: row.item_id,
+            book_id: row.book_id,
+            quantity: row.quantity,
+            price: row.item_price
         });
+    });
 
-        return order;
-    } else if (userId) {
-        const ordersMap = new Map();
-
-        rows.forEach(row => {
-            const orderId = row.order_id;
-
-            if (!ordersMap.has(orderId)) {
-                ordersMap.set(orderId, {
-                    id: orderId,
-                    total_price: row.total_price,
-                    order_date: row.order_date,
-                    items: []
-                });
-            }
-
-            ordersMap.get(orderId).items.push({
-                item_id: row.item_id,
-                book_id: row.book_id,
-                quantity: row.quantity,
-                price: row.item_price
-            });
-        });
-
-        return Array.from(ordersMap.values());
-    }
+    return Array.from(ordersMap.values());
 };
 
 const updateOrder = async (orderId, orderData) => {
@@ -219,15 +191,9 @@ const deleteOrder = async (id) => {
         return result.affectedRows > 0;
     };
 
-const getAllOrders = async () => {
-        const [rows] = await pool.query(`SELECT * FROM orders`);
-        return rows;
-    };
-
 module.exports = {
     createOrder,
-    getOrder,
-    getAllOrders,
+    getOrders,
     updateOrder,
     deleteOrder
 }

@@ -37,14 +37,18 @@ const getBookById = async (req, res) => {
 };
 
 const deleteBook = async (req, res) => {
-    const { id } = req.query;
+    const { id } = req.params;
     try {
-        await bookService.deleteBook(id);
+        const affectedRows = await bookService.deleteBookById(id);
+        if (affectedRows === 0) {
+            return res.status(404).json({ message: 'Book not found' });
+        }
         res.status(200).json({ message: 'Book deleted successfully' });
     } catch (error) {
-        res.status(404).json({ error: error.message });
+        res.status(500).json({ error: error.message });
     }
 };
+
 
 const filterBooks = async (req, res) => {
     try {

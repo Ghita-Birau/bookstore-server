@@ -1,15 +1,15 @@
 const express = require('express');
 const userController = require('../controller/user.controller');
 const router = express.Router();
-const authenticateToken = require('../security/jwt.validator');
+const { authorizeRoles, authenticateToken } = require("../security/jwt.validator");
+const {validateUserRegistration, validateUserLogin} = require("../validator/user.validator");
 
-router.post('/register', userController.registerUser);
-router.post('/login', userController.loginUser);
-router.post('/user', userController.createUser);
-router.get('/user', authenticateToken, userController.getUserDetails);
-router.put('/user', authenticateToken, userController.updateUser);
-router.delete('/user/:id', userController.deleteUser);
-router.get('/users', userController.getAllUsers);
+router.post('/register', validateUserRegistration, userController.registerUser);
+router.post('/login', validateUserLogin, userController.loginUser);
+router.get('/user', authenticateToken, authorizeRoles('user', 'admin'), userController.getUserDetails);
+router.put('/user', authenticateToken, authorizeRoles('user', 'admin'), userController.updateUser);
+//router.delete('/user/:id', userController.deleteUser);
+//router.get('/users', userController.getAllUsers);
 
 module.exports = router;
 

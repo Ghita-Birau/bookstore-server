@@ -13,26 +13,23 @@ const createOrder = async (req, res) => {
         }
     };
 
-const getOrder = async (req, res) => {
+const getOrders = async (req, res) => {
     try {
-        const { id } = req.query;
         const userId = req.user.id;
+        const isAdmin = req.user.role === 'admin';
 
-        if (!id && !userId) {
-            return res.status(400).json({ message: 'Either id or userId must be provided' });
+        const orders = await orderService.getOrders(userId, isAdmin);
+
+        if (!orders || (Array.isArray(orders) && orders.length === 0)) {
+            return res.status(404).json({ message: 'Orders not found' });
         }
 
-        const order = await orderService.getOrder(id, userId);
-
-        if (!order || (Array.isArray(order) && order.length === 0)) {
-            return res.status(404).json({ message: 'Order not found' });
-        }
-
-        res.status(200).json(order);
+        return res.status(200).json(orders);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
+
 const updateOrder = async (req, res) => {
     try {
         const updatedOrder = await orderService.updateOrder(req.params.id, req.body);
@@ -57,19 +54,9 @@ const deleteOrder = async (req, res) => {
         }
     };
 
-const getAllOrders = async (req, res) => {
-        try {
-            const orders = await orderService.getAllOrders();
-            res.status(200).json(orders);
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-    };
-
 module.exports = {
     createOrder,
-    getOrder,
-    getAllOrders,
+    getOrders,
     updateOrder,
     deleteOrder,
 }

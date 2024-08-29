@@ -1,13 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const orderController = require('../controller/order.controller');
-const authenticateToken = require('../security/jwt.validator');
+const { authorizeRoles, authenticateToken } = require("../security/jwt.validator");
+const {validateOrderIdParam, validateOrderCreation} = require("../validator/order.validator");
 
-router.post('/order', authenticateToken, orderController.createOrder);
-//router.post('/order', orderController.createOrder);
-router.get('/order', authenticateToken, orderController.getOrder);
-router.get('/orders', orderController.getAllOrders);
-router.put('/order/:id', orderController.updateOrder);
-router.delete('/order/:id', orderController.deleteOrder);
+router.post('/order', authenticateToken, authorizeRoles('user'), validateOrderCreation, orderController.createOrder);
+router.get('/orders', authenticateToken, orderController.getOrders);
+router.put('/order/:id', validateOrderIdParam, orderController.updateOrder);
+router.delete('/order/:id', validateOrderIdParam, orderController.deleteOrder);
 
 module.exports = router;

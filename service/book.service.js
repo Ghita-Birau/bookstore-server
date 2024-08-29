@@ -9,22 +9,28 @@ const createBook = async (title, author, publishing_house, gen, price, publicati
 };
 
 const getAllBooks = async () => {
-    const [rows] = await pool.execute('SELECT * FROM books');
+    const [rows] = await pool.execute('SELECT * FROM books WHERE is_deleted = FALSE');
     return rows;
 };
 
 const getBookById = async (id) => {
-    const [rows] = await pool.execute('SELECT * FROM books WHERE id = ?', [id]);
+    const [rows] = await pool.execute('SELECT * FROM books WHERE id = ? AND is_deleted = FALSE', [id]);
     return rows.length > 0 ? rows[0] : null;
 };
 
 const deleteBookById = async (id) => {
-    const [result] = await pool.execute('DELETE FROM books WHERE id = ?', [id]);
+    const [result] = await pool.execute(
+        'UPDATE books SET is_deleted = TRUE WHERE id = ?',
+        [id]
+    );
+    if (result.affectedRows === 0) {
+        throw new Error('Book not found');
+    }
     return result.affectedRows;
 };
 
 const filterBooks = async (filters, page, limit, sortBy, sortOrder) => {
-    let query = 'SELECT * FROM books WHERE 1=1 AND title IS NOT NULL AND title != \'\' AND price IS NOT NULL AND price != \'\'';
+    let query = 'SELECT * FROM books WHERE 1=1 AND title IS NOT NULL AND is_deleted = FALSE AND title != \'\' AND price IS NOT NULL AND price != \'\'';
     const params = [];
 
     const filterMappings = {
